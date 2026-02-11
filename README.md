@@ -3,6 +3,7 @@
 Team Name: Adaptive Coders  
 Hackathon: YUKTI 1.0  
 Theme: Smart Education 
+
 Team Members:
 - Ashutosh Srivastava (Team Lead)
 - Akash Gupta
