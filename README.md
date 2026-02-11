@@ -19,7 +19,7 @@ A game-based Java learning platform that tracks topic-wise performance and recom
 ## Architecture
 The frontend communicates with backend REST APIs.
 The backend handles game logic, progress tracking and weak-topic detection.
-Data is stored in MySQL.
+Data is stored in local JSON.
 
 ## Status
 This repository currently contains the project proposal and architecture.
