@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - Java Learning Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="page-wrapper">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">Java Learning</h1>
+                <div class="flex gap-md" style="align-items: center;">
+                    <span id="teacherName" style="color: var(--text-secondary);"></span>
+                    <button class="btn btn-ghost" onclick="AUTH.logout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <h2 class="mb-lg">Teacher Dashboard</h2>
+
+                <!-- Overview Stats -->
+                <div class="grid grid-4 mb-lg">
+                    <div class="stat-card fade-in">
+                        <div class="stat-value" id="totalStudents">0</div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                    <div class="stat-card fade-in" style="animation-delay: 0.1s;">
+                        <div class="stat-value" id="avgSuccessRate">0%</div>
+                        <div class="stat-label">Average Success Rate</div>
+                    </div>
+                    <div class="stat-card fade-in" style="animation-delay: 0.2s;">
+                        <div class="stat-value" id="totalQuestions">0</div>
+                        <div class="stat-label">Questions Attempted</div>
+                    </div>
+                    <div class="stat-card fade-in" style="animation-delay: 0.3s;">
+                        <div class="stat-value" id="activeStudents">0</div>
+                        <div class="stat-label">Active Today</div>
+                    </div>
+                </div>
+
+
+                <!-- Student Progress Charts -->
+                <div class="glass-card mb-lg fade-in" style="animation-delay: 0.4s;">
+                    <div class="card-header">
+                        <h3 class="card-title">Student Progress Overview</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="studentProgressCharts" class="grid grid-2 gap-md">
+                            <!-- Progress charts will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Performance Analysis -->
+                <div class="glass-card mb-lg fade-in" style="animation-delay: 0.6s;">
+                    <div class="card-header">
+                        <h3 class="card-title">Student Performance Analysis</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="studentAnalysisCharts" class="grid gap-md">
+                            <!-- Analysis charts will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="data.js"></script>
+    <script src="teacher.js"></script>
+    <script>
+        // Protect page - only teachers can access
+        AUTH.protectPage('teacher');
+
+        // Display teacher name
+        document.getElementById('teacherName').textContent = `Welcome, ${AUTH.getUserDisplayName()}!`;
+
+        // Load dashboard data
+        function loadDashboard() {
+            // Get students from localStorage instead of demo data
+            const savedStudents = localStorage.getItem('students');
+            const students = savedStudents ? JSON.parse(savedStudents) : [];
+
+            // Check if there are any students
+            if (students.length === 0) {
+                // Show empty state
+                document.getElementById('totalStudents').textContent = '0';
+                document.getElementById('avgSuccessRate').textContent = '0%';
+                document.getElementById('totalQuestions').textContent = '0';
+                document.getElementById('activeStudents').textContent = '0';
+
+                // Show empty message in tables
+                document.getElementById('studentTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">No students registered yet</div>
+                            <div style="font-size: 0.9rem;">Students will appear here once they sign up and start practicing</div>
+                        </td>
+                    </tr>
+                `;
+
+                document.getElementById('weakTopicsTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">No student data available</div>
+                            <div style="font-size: 0.9rem;">Weak topics analysis will appear when students start practicing</div>
+                        </td>
+                    </tr>
+                `;
+
+                document.getElementById('topicPerformance').innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">No performance data yet</div>
+                        <div style="font-size: 0.9rem;">Topic performance will be displayed once students start practicing</div>
+                    </div>
+                `;
+
+                return;
+            }
+
+            // Calculate overview stats
+            const totalStudents = students.length;
+            const totalQuestions = students.reduce((sum, s) => sum + s.totalQuestions, 0);
+            const avgSuccess = totalStudents > 0
+                ? Math.round(students.reduce((sum, s) => sum + s.codeSuccessRate, 0) / totalStudents)
+                : 0;
+
+            // Active today (within last 24 hours)
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const activeToday = students.filter(s =>
+                new Date(s.lastActive) > oneDayAgo
+            ).length;
+
+            // Update stats
+            document.getElementById('totalStudents').textContent = totalStudents;
+            document.getElementById('avgSuccessRate').textContent = avgSuccess + '%';
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            document.getElementById('activeStudents').textContent = activeToday;
+
+            // Render progress charts
+            renderStudentProgressCharts(students);
+            renderStudentAnalysisCharts(students);
+        }
+
+
+        function renderStudentProgressCharts(students) {
+            const container = document.getElementById('studentProgressCharts');
+
+            if (students.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">No students registered yet</div>
+                        <div style="font-size: 0.9rem;">Student progress will appear here once they sign up</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            students.forEach((student, index) => {
+                const name = student.name || student.username || 'Unknown';
+                const totalQuestions = student.totalQuestions || 0;
+                const codeSuccessRate = student.codeSuccessRate || 0;
+                const currentLevel = student.currentLevel || 'easy';
+                const improvementTrend = student.improvementTrend || [];
+
+                // Determine status
+                let status = '';
+                let statusColor = '';
+                if (codeSuccessRate >= 85 && totalQuestions >= 30) {
+                    status = 'Master';
+                    statusColor = 'var(--accent)';
+                } else if (codeSuccessRate >= 70 && totalQuestions >= 20) {
+                    status = 'Advanced';
+                    statusColor = 'var(--primary)';
+                } else if (codeSuccessRate >= 50 && totalQuestions >= 10) {
+                    status = 'Intermediate';
+                    statusColor = 'var(--warning)';
+                } else {
+                    status = 'Beginner';
+                    statusColor = 'var(--danger)';
+                }
+
+                // Calculate trend
+                const trend = improvementTrend.length >= 2
+                    ? improvementTrend[improvementTrend.length - 1] - improvementTrend[0]
+                    : 0;
+                const trendIcon = trend > 0 ? '📈' : trend < 0 ? '📉' : '➡️';
+                const trendColor = trend > 0 ? 'var(--accent)' : trend < 0 ? 'var(--danger)' : 'var(--text-muted)';
+
+                html += `
+                    <div class="fade-in" style="animation-delay: ${0.1 * index}s; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <div>
+                                <h4 style="color: var(--text-primary); margin: 0 0 0.25rem 0;">${name}</h4>
+                                <span class="badge badge-primary" style="font-size: 0.75rem;">${currentLevel}</span>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Status</div>
+                                <span class="badge" style="background: ${statusColor}; font-size: 0.85rem;">${status}</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Circle -->
+                        <div style="display: flex; align-items: center; justify-content: center; margin: 1.5rem 0;">
+                            <div style="position: relative; width: 120px; height: 120px;">
+                                <svg width="120" height="120" style="transform: rotate(-90deg);">
+                                    <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="10"/>
+                                    <circle cx="60" cy="60" r="50" fill="none" stroke="${statusColor}" stroke-width="10" 
+                                        stroke-dasharray="${(codeSuccessRate / 100) * 314} 314" stroke-linecap="round"/>
+                                </svg>
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary);">${codeSuccessRate}%</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">Success</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.25rem; font-weight: bold; color: var(--text-primary);">${totalQuestions}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Questions</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.25rem; font-weight: bold; color: ${trendColor};">${trendIcon} ${Math.abs(trend)}%</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Trend</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderStudentAnalysisCharts(students) {
+            const container = document.getElementById('studentAnalysisCharts');
+
+            if (students.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">No performance data yet</div>
+                        <div style="font-size: 0.9rem;">Analysis will appear when students start practicing</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            students.forEach((student, index) => {
+                const name = student.name || student.username || 'Unknown';
+                const topicPerformance = student.topicPerformance || {};
+                const weakTopics = [];
+
+                // Calculate weak topics
+                Object.keys(topicPerformance).forEach(topic => {
+                    const perf = topicPerformance[topic];
+                    if (perf && perf.attempted >= 3) {
+                        const successRate = (perf.correct / perf.attempted) * 100;
+                        if (successRate < 60 || perf.failureStreak >= 2) {
+                            weakTopics.push({
+                                name: DATA.topics[topic] || topic,
+                                rate: Math.round(successRate)
+                            });
+                        }
+                    }
+                });
+
+                // Sort weak topics by rate
+                weakTopics.sort((a, b) => a.rate - b.rate);
+
+                html += `
+                    <div class="fade-in" style="animation-delay: ${0.1 * index}s; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1);">
+                        <h4 style="color: var(--text-primary); margin: 0 0 1rem 0;">${name}</h4>
+                        
+                        ${weakTopics.length === 0 ? `
+                            <div style="text-align: center; padding: 2rem; color: var(--accent);">
+                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">✓</div>
+                                <div style="font-weight: bold;">No Weak Topics</div>
+                                <div style="font-size: 0.85rem; margin-top: 0.25rem; color: var(--text-muted);">Performing well across all areas</div>
+                            </div>
+                        ` : `
+                            <div style="margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                                Topics needing attention:
+                            </div>
+                            ${weakTopics.map(wt => {
+                    const color = wt.rate < 40 ? 'var(--danger)' : 'var(--warning)';
+                    return `
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                            <span style="color: var(--text-primary); font-size: 0.9rem;">${wt.name}</span>
+                                            <span style="color: ${color}; font-weight: bold;">${wt.rate}%</span>
+                                        </div>
+                                        <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                                            <div style="height: 100%; background: ${color}; width: ${wt.rate}%; transition: width 0.3s;"></div>
+                                        </div>
+                                    </div>
+                                `;
+                }).join('')}
+                        `}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function calculateTrend(improvementTrend) {
+            if (!improvementTrend || improvementTrend.length < 2) return 0;
+            return improvementTrend[improvementTrend.length - 1] - improvementTrend[0];
+        }
+
+        function populateStudentTable(students) {
+            const tbody = document.getElementById('studentTableBody');
+
+            let html = '';
+            students.forEach((student, index) => {
+                // Safety checks for missing data
+                const improvementTrend = student.improvementTrend || [];
+                const totalQuestions = student.totalQuestions || 0;
+                const codeSuccessRate = student.codeSuccessRate || 0;
+                const currentLevel = student.currentLevel || 'easy';
+                const weakTopics = student.weakTopics || [];
+                const name = student.name || student.username || 'Unknown';
+
+                const trend = calculateTrend(improvementTrend);
+                const trendIcon = trend > 0 ? '📈' : trend < 0 ? '📉' : '➡️';
+                const trendColor = trend > 0 ? 'var(--accent)' : trend < 0 ? 'var(--danger)' : 'var(--text-muted)';
+
+                const successClass = codeSuccessRate >= 80 ? 'badge-success' :
+                    codeSuccessRate >= 60 ? 'badge-primary' : 'badge-warning';
+
+                html += `
+                    <tr class="fade-in" style="animation-delay: ${0.1 * index}s;">
+                        <td><strong style="color: var(--text-primary);">${name}</strong></td>
+                        <td><span class="badge badge-primary">${currentLevel}</span></td>
+                        <td>${totalQuestions}</td>
+                        <td><span class="badge ${successClass}">${codeSuccessRate}%</span></td>
+                        <td>
+                            ${weakTopics.length > 0
+                        ? weakTopics.map(t => `<span class="badge badge-danger" style="margin: 0.2rem;">${DATA.topics[t] || t}</span>`).join('')
+                        : '<span style="color: var(--text-muted);">None</span>'}
+                        </td>
+                        <td>
+                            <span style="color: ${trendColor}; font-size: 1.2rem;">${trendIcon}</span>
+                            <span style="color: ${trendColor};">${Math.abs(trend)}%</span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function calculateTrend(improvementTrend) {
+            if (improvementTrend.length < 2) return 0;
+            return improvementTrend[improvementTrend.length - 1] - improvementTrend[0];
+        }
+
+        function populateWeakTopicsTable(students) {
+            const tableBody = document.getElementById('weakTopicsTableBody');
+
+            let rows = '';
+            students.forEach(student => {
+                // Calculate weak topics
+                const weakTopics = [];
+                Object.keys(student.topicPerformance).forEach(topic => {
+                    const perf = student.topicPerformance[topic];
+                    if (perf.attempted >= 3) {
+                        const successRate = (perf.correct / perf.attempted) * 100;
+                        if (successRate < 60 || perf.failureStreak >= 2) {
+                            weakTopics.push({
+                                topic: topic,
+                                topicName: DATA.topics[topic],
+                                attempted: perf.attempted,
+                                correct: perf.correct,
+                                successRate: Math.round(successRate),
+                                failureStreak: perf.failureStreak,
+                                mode: perf.mode
+                            });
+                        }
+                    }
+                });
+
+                // Sort by success rate (worst first)
+                weakTopics.sort((a, b) => a.successRate - b.successRate);
+
+                // Determine status and recommendation
+                let statusBadge = '';
+                let recommendation = '';
+
+                if (weakTopics.length === 0) {
+                    statusBadge = '<span class="badge badge-success">No Weak Topics</span>';
+                    recommendation = '<span style="color: var(--accent);">Performing well across all topics</span>';
+                } else if (weakTopics.length >= 3) {
+                    statusBadge = `<span class="badge badge-danger">${weakTopics.length} Topics</span>`;
+                    recommendation = '<span style="color: var(--danger);">Needs immediate attention and extra practice</span>';
+                } else {
+                    statusBadge = `<span class="badge badge-warning">${weakTopics.length} Topic${weakTopics.length > 1 ? 's' : ''}</span>`;
+                    recommendation = '<span style="color: var(--warning);">Requires focused practice</span>';
+                }
+
+                // Build topics details
+                let topicsDetails = '';
+                if (weakTopics.length === 0) {
+                    topicsDetails = '<span style="color: var(--text-muted);">All topics above 60%</span>';
+                } else {
+                    topicsDetails = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+                    weakTopics.forEach(wt => {
+                        const color = wt.successRate < 40 ? 'var(--danger)' : 'var(--warning)';
+                        topicsDetails += `
+                            <div style="padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 0.25rem; border-left: 3px solid ${color};">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                    <strong style="color: var(--text-primary);">${wt.topicName}</strong>
+                                    <span class="badge" style="background: ${color};">${wt.successRate}%</span>
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                    ${wt.attempted} attempted • ${wt.correct} correct • ${wt.failureStreak} streak
+                                    ${wt.mode === 'code-fix' ? ' • <span style="color: var(--warning);">Code-Fix Mode</span>' : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    topicsDetails += '</div>';
+                }
+
+                rows += `
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <strong>${student.name}</strong>
+                                <span class="badge badge-secondary" style="font-size: 0.75rem;">${student.id}</span>
+                            </div>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td>${topicsDetails}</td>
+                        <td>${recommendation}</td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML = rows;
+        }
+
+        function showTopicPerformance(students) {
+            const container = document.getElementById('topicPerformance');
+
+            // Aggregate topic performance across all students
+            const topicStats = {};
+            Object.keys(DATA.topics).forEach(topic => {
+                topicStats[topic] = { attempted: 0, correct: 0 };
+            });
+
+            students.forEach(student => {
+                // Safety check for topicPerformance
+                const topicPerformance = student.topicPerformance || {};
+
+                Object.keys(topicPerformance).forEach(topic => {
+                    const perf = topicPerformance[topic];
+                    if (perf && topicStats[topic]) {
+                        topicStats[topic].attempted += perf.attempted || 0;
+                        topicStats[topic].correct += perf.correct || 0;
+                    }
+                });
+            });
+
+            // Render topic bars
+            let html = '<div class="grid gap-md">';
+            Object.keys(topicStats).forEach(topic => {
+                const stats = topicStats[topic];
+                const successRate = stats.attempted > 0
+                    ? Math.round((stats.correct / stats.attempted) * 100)
+                    : 0;
+
+                const barClass = successRate >= 80 ? 'progress-success' :
+                    successRate >= 60 ? '' : 'progress-warning';
+
+                html += `
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem;">
+                        <div class="flex-between mb-sm">
+                            <strong style="color: var(--text-primary);">${DATA.topics[topic]}</strong>
+                            <span style="color: var(--text-secondary);">${successRate}%</span>
+                        </div>
+                        <div class="progress-bar ${barClass}">
+                            <div class="progress-fill" style="width: ${successRate}%;"></div>
+                        </div>
+                        <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">
+                            ${stats.attempted} total attempts • ${stats.correct} correct
+                        </p>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        // Load dashboard on page load
+        loadDashboard();
+    </script>
+</body>
+
+</html>

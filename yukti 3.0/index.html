@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java Learning Platform - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="page-wrapper">
+        <!-- Hero Section -->
+        <div class="container" style="padding-top: 3rem;">
+            <div class="text-center mb-lg">
+                <h1 class="logo" style="font-size: 3rem; margin-bottom: 1rem;">
+                    Java Learning Platform
+                </h1>
+                <p style="font-size: 1.2rem; color: var(--text-secondary);">
+                    Smart, Adaptive Learning for Java Programming
+                </p>
+            </div>
+
+            <!-- Role Selection Cards -->
+            <div class="grid grid-2" style="max-width: 900px; margin: 0 auto;">
+                <!-- Student Login Card -->
+                <div class="glass-card fade-in">
+                    <div class="card-header">
+                        <h2 class="card-title" style="text-align: center;">
+                            Student Login
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="studentLoginForm" onsubmit="handleLogin(event, 'student')">
+                            <div class="form-group">
+                                <label class="form-label" for="studentUsername">Username</label>
+                                <input type="text" id="studentUsername" class="form-input"
+                                    placeholder="Enter your username" required autocomplete="username">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="studentPassword">Password</label>
+                                <input type="password" id="studentPassword" class="form-input"
+                                    placeholder="Enter your password" required autocomplete="current-password">
+                            </div>
+                            <div id="studentError" class="alert alert-danger hidden"></div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                Login as Student
+                            </button>
+                        </form>
+
+                        <!-- Sign Up Link -->
+                        <div class="mt-md text-center">
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                Don't have an account?
+                                <a href="signup.html"
+                                    style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                    Sign up here
+                                </a>
+                            </p>
+                        </div>
+
+
+                    </div>
+                </div>
+
+                <!-- Teacher Login Card -->
+                <div class="glass-card fade-in" style="animation-delay: 0.1s;">
+                    <div class="card-header">
+                        <h2 class="card-title" style="text-align: center;">
+                            Teacher Login
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="teacherLoginForm" onsubmit="handleLogin(event, 'teacher')">
+                            <div class="form-group">
+                                <label class="form-label" for="teacherUsername">Username</label>
+                                <input type="text" id="teacherUsername" class="form-input"
+                                    placeholder="Enter your username" required autocomplete="username">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="teacherPassword">Password</label>
+                                <input type="password" id="teacherPassword" class="form-input"
+                                    placeholder="Enter your password" required autocomplete="current-password">
+                            </div>
+                            <div id="teacherError" class="alert alert-danger hidden"></div>
+                            <button type="submit" class="btn btn-success" style="width: 100%;">
+                                Login as Teacher
+                            </button>
+                        </form>
+
+                        <!-- Sign Up Link -->
+                        <div class="mt-md text-center">
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                Don't have an account?
+                                <a href="signup.html"
+                                    style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                    Sign up here
+                                </a>
+                            </p>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="mt-xl" style="max-width: 1200px; margin-left: auto; margin-right: auto;">
+                <h3 class="text-center mb-lg" style="color: var(--text-primary);">
+                    Platform Features
+                </h3>
+                <div class="grid grid-3">
+                    <div class="card fade-in" style="animation-delay: 0.2s;">
+                        <h4 style="text-align: center; color: var(--primary-light); margin-top: 1rem;">Adaptive Learning
+                        </h4>
+                        <p style="text-align: center; font-size: 0.9rem;">
+                            Automatically switches from MCQs to code-fixing problems after 3 consecutive failures
+                        </p>
+                    </div>
+                    <div class="card fade-in" style="animation-delay: 0.3s;">
+                        <h4 style="text-align: center; color: var(--primary-light); margin-top: 1rem;">Progressive Hints
+                        </h4>
+                        <p style="text-align: center; font-size: 0.9rem;">
+                            Get helpful hints that unlock progressively as you attempt code problems
+                        </p>
+                    </div>
+                    <div class="card fade-in" style="animation-delay: 0.4s;">
+                        <h4 style="text-align: center; color: var(--primary-light); margin-top: 1rem;">Detailed
+                            Analytics</h4>
+                        <p style="text-align: center; font-size: 0.9rem;">
+                            Track weak topics, success rates, and improvement trends with visual charts
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        function handleLogin(event, role) {
+            event.preventDefault();
+
+            const usernameField = document.getElementById(`${role}Username`);
+            const passwordField = document.getElementById(`${role}Password`);
+            const errorDiv = document.getElementById(`${role}Error`);
+
+            const username = usernameField.value.trim();
+            const password = passwordField.value;
+
+            // Clear previous errors
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+
+            // Attempt login
+            const result = AUTH.login(username, password, role);
+
+            if (result.success) {
+                // Redirect to appropriate dashboard
+                AUTH.redirectToDashboard(role);
+            } else {
+                // Show error message
+                errorDiv.textContent = result.message;
+                errorDiv.classList.remove('hidden');
+
+                // Shake animation for error
+                const form = event.target;
+                form.style.animation = 'none';
+                setTimeout(() => {
+                    form.style.animation = 'shake 0.5s';
+                }, 10);
+            }
+        }
+
+        // Add shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+                20%, 40%, 60%, 80% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>

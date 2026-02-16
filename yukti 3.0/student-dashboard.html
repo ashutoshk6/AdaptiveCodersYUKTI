@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Java Learning Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="page-wrapper">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">Java Learning</h1>
+                <div class="flex gap-md" style="align-items: center;">
+                    <span id="studentName" style="color: var(--text-secondary);"></span>
+                    <button class="btn btn-ghost" onclick="AUTH.logout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <h2 class="mb-lg">Student Dashboard</h2>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-4 mb-lg">
+                    <div class="stat-card fade-in">
+                        <div class="stat-value" id="totalQuestions">0</div>
+                        <div class="stat-label">Questions Attempted</div>
+                    </div>
+                    <div class="stat-card fade-in" style="animation-delay: 0.1s;">
+                        <div class="stat-value" id="successRate">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="stat-card fade-in" style="animation-delay: 0.2s;">
+                        <div class="stat-value" id="totalXP" style="color: var(--accent);">0</div>
+                        <div class="stat-label">Total XP</div>
+                    </div>
+                    <div class="stat-card fade-in" style="animation-delay: 0.3s;">
+                        <div class="stat-value" id="currentLevel">Easy</div>
+                        <div class="stat-label">Current Level</div>
+                    </div>
+                </div>
+
+                <!-- Learning Feedback Panel -->
+                <div class="glass-card mb-lg fade-in" style="animation-delay: 0.4s;">
+                    <div class="card-header">
+                        <h3 class="card-title">Learning Feedback</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="grid grid-2 gap-lg">
+                            <!-- Weak Topics -->
+                            <div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">
+                                    Current Weak Topics
+                                </h4>
+                                <div id="weakTopicsList"></div>
+                            </div>
+
+                            <!-- Improvement Trend -->
+                            <div>
+                                <h4 style="color: var(--text-primary); margin-bottom: 1rem;">
+                                    📈 Improvement Trend
+                                </h4>
+                                <div id="improvementChart" style="height: 150px; position: relative;">
+                                    <!-- Chart will be rendered here -->
+                                </div>
+                                <p id="trendMessage"
+                                    style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);"></p>
+                            </div>
+                        </div>
+
+                        <!-- Specific Feedback Messages -->
+                        <div class="mt-lg">
+                            <h4 style="color: var(--text-primary); margin-bottom: 1rem;">
+                                Specific Feedback
+                            </h4>
+                            <div id="specificFeedback"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Difficulty Selection -->
+                <div class="glass-card mb-lg fade-in" style="animation-delay: 0.5s;">
+                    <div class="card-header">
+                        <h3 class="card-title">🎮 Select Difficulty Level</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="grid grid-3 gap-md">
+                            <button class="btn btn-outline" onclick="selectLevel('easy')" id="easyBtn">
+                                <span style="font-size: 1.5rem;">⭐</span>
+                                <span>Easy</span>
+                            </button>
+                            <button class="btn btn-outline" onclick="selectLevel('medium')" id="mediumBtn">
+                                <span style="font-size: 1.5rem;">⭐⭐</span>
+                                <span>Medium</span>
+                            </button>
+                            <button class="btn btn-outline" onclick="selectLevel('hard')" id="hardBtn">
+                                <span style="font-size: 1.5rem;">⭐⭐⭐</span>
+                                <span>Hard</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Start Practice Button -->
+                <div class="text-center fade-in" style="animation-delay: 0.6s;">
+                    <button class="btn btn-primary" onclick="startPractice()"
+                        style="font-size: 1.2rem; padding: 1rem 2rem;">
+                        🚀 Start Practice
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="data.js"></script>
+    <script src="student.js"></script>
+    <script>
+        // Protect page - only students can access
+        AUTH.protectPage('student');
+
+        // Display student name
+        document.getElementById('studentName').textContent = `Welcome, ${AUTH.getUserDisplayName()}!`;
+
+        // Load and display dashboard data
+        function loadDashboard() {
+            const user = AUTH.getCurrentUser();
+            const studentData = DATA.getStudentData(user.username);
+
+            // Update stats
+            document.getElementById('totalQuestions').textContent = studentData.totalQuestions;
+            const successRate = studentData.totalQuestions > 0
+                ? Math.round((studentData.correctAnswers / studentData.totalQuestions) * 100)
+                : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            document.getElementById('totalXP').textContent = studentData.totalXP || 0;
+
+            // Calculate weak topics
+            const weakTopics = STUDENT.getWeakTopics(studentData);
+            document.getElementById('currentLevel').textContent =
+                studentData.currentLevel.charAt(0).toUpperCase() + studentData.currentLevel.slice(1);
+
+            // Highlight current level button
+            ['easy', 'medium', 'hard'].forEach(level => {
+                const btn = document.getElementById(level + 'Btn');
+                if (level === studentData.currentLevel) {
+                    btn.style.background = 'var(--gradient-primary)';
+                    btn.style.color = 'white';
+                    btn.style.borderColor = 'transparent';
+                }
+            });
+
+            // Display weak topics
+            displayWeakTopics(weakTopics, studentData);
+
+            // Display improvement trend
+            displayImprovementTrend(studentData.improvementTrend);
+
+            // Display specific feedback
+            displaySpecificFeedback(studentData);
+        }
+
+        function displayWeakTopics(weakTopics, studentData) {
+            const container = document.getElementById('weakTopicsList');
+
+            if (weakTopics.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-success">
+                        🎉 Great job! You don't have any weak topics right now. Keep up the excellent work!
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            weakTopics.forEach(topic => {
+                const perf = studentData.topicPerformance[topic];
+                const rate = perf.attempted > 0 ? Math.round((perf.correct / perf.attempted) * 100) : 0;
+
+                html += `
+                    <div class="mb-md" style="padding: 1rem; background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger); border-radius: 0.5rem;">
+                        <div class="flex-between mb-sm">
+                            <strong style="color: var(--text-primary);">${DATA.topics[topic]}</strong>
+                            <span class="badge badge-danger">${rate}% Success</span>
+                        </div>
+                        <div class="progress-bar progress-danger">
+                            <div class="progress-fill" style="width: ${rate}%;"></div>
+                        </div>
+                        <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">
+                            ${perf.attempted} attempted • ${perf.correct} correct • ${perf.failureStreak} consecutive failures
+                        </p>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function displayImprovementTrend(trend) {
+            const container = document.getElementById('improvementChart');
+            const messageEl = document.getElementById('trendMessage');
+
+            if (trend.length < 2) {
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">Not enough data yet. Keep practicing!</p>';
+                return;
+            }
+
+            // Simple line chart
+            const max = Math.max(...trend, 100);
+            const width = container.offsetWidth;
+            const height = 150;
+            const points = trend.map((value, index) => {
+                const x = (index / (trend.length - 1)) * (width - 40) + 20;
+                const y = height - ((value / max) * (height - 40)) - 20;
+                return `${x},${y}`;
+            }).join(' ');
+
+            container.innerHTML = `
+                <svg width="100%" height="${height}" style="overflow: visible;">
+                    <!-- Grid lines -->
+                    <line x1="20" y1="20" x2="20" y2="${height - 20}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                    <line x1="20" y1="${height - 20}" x2="${width - 20}" y2="${height - 20}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                    
+                    <!-- Trend line -->
+                    <polyline points="${points}" fill="none" stroke="url(#gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    
+                    <!-- Data points -->
+                    ${trend.map((value, index) => {
+                const x = (index / (trend.length - 1)) * (width - 40) + 20;
+                const y = height - ((value / max) * (height - 40)) - 20;
+                return `
+                            <circle cx="${x}" cy="${y}" r="4" fill="var(--primary)"/>
+                            <text x="${x}" y="${y - 10}" text-anchor="middle" fill="var(--text-primary)" font-size="12">${value}%</text>
+                        `;
+            }).join('')}
+                    
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            `;
+
+            // Calculate improvement
+            const improvement = trend[trend.length - 1] - trend[0];
+            if (improvement > 0) {
+                messageEl.innerHTML = `<span style="color: var(--accent);">📈 You've improved by ${improvement}% since you started!</span>`;
+            } else if (improvement < 0) {
+                messageEl.innerHTML = `<span style="color: var(--warning);">⚠️ Your performance has decreased. Focus on your weak topics!</span>`;
+            } else {
+                messageEl.innerHTML = `<span style="color: var(--text-secondary);">➡️ Your performance is stable. Keep practicing!</span>`;
+            }
+        }
+
+        function displaySpecificFeedback(studentData) {
+            const container = document.getElementById('specificFeedback');
+            const feedback = STUDENT.generateSpecificFeedback(studentData);
+
+            if (feedback.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        ℹ️ Keep practicing to get personalized feedback on your learning journey!
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="grid grid-2 gap-md">';
+            feedback.forEach(item => {
+                const alertClass = item.type === 'success' ? 'alert-success' :
+                    item.type === 'warning' ? 'alert-warning' : 'alert-info';
+                html += `
+                    <div class="alert ${alertClass}">
+                        ${item.message}
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function selectLevel(level) {
+            const user = AUTH.getCurrentUser();
+            const studentData = DATA.getStudentData(user.username);
+            studentData.currentLevel = level;
+            DATA.updateStudentData(user.username, studentData);
+
+            // Update UI
+            ['easy', 'medium', 'hard'].forEach(l => {
+                const btn = document.getElementById(l + 'Btn');
+                if (l === level) {
+                    btn.style.background = 'var(--gradient-primary)';
+                    btn.style.color = 'white';
+                    btn.style.borderColor = 'transparent';
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.color = 'var(--primary)';
+                    btn.style.borderColor = 'var(--primary)';
+                }
+            });
+
+            document.getElementById('currentLevel').textContent =
+                level.charAt(0).toUpperCase() + level.slice(1);
+        }
+
+        function startPractice() {
+            window.location.href = 'practice.html';
+        }
+
+        // Load dashboard on page load
+        loadDashboard();
+    </script>
+</body>
+
+</html>

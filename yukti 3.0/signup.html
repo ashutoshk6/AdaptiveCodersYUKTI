@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Java Learning Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="page-wrapper">
+        <!-- Hero Section -->
+        <div class="container" style="padding-top: 3rem;">
+            <div class="text-center mb-lg">
+                <h1 class="logo" style="font-size: 3rem; margin-bottom: 1rem;">
+                    Java Learning Platform
+                </h1>
+                <p style="font-size: 1.2rem; color: var(--text-secondary);">
+                    Create Your Account
+                </p>
+            </div>
+
+            <!-- Signup Form -->
+            <div style="max-width: 600px; margin: 0 auto;">
+                <div class="glass-card fade-in">
+                    <div class="card-header">
+                        <h2 class="card-title" style="text-align: center;">
+                            Sign Up
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="signupForm" onsubmit="handleSignup(event)">
+                            <!-- Role Selection -->
+                            <div class="form-group">
+                                <label class="form-label">I am a:</label>
+                                <div class="grid grid-2 gap-md">
+                                    <button type="button" class="btn btn-outline" onclick="selectRole('student')"
+                                        id="studentRoleBtn">
+                                        Student
+                                    </button>
+                                    <button type="button" class="btn btn-outline" onclick="selectRole('teacher')"
+                                        id="teacherRoleBtn">
+                                        Teacher
+                                    </button>
+                                </div>
+                                <input type="hidden" id="selectedRole" required>
+                            </div>
+
+                            <!-- Full Name -->
+                            <div class="form-group">
+                                <label class="form-label" for="fullName">Full Name</label>
+                                <input type="text" id="fullName" class="form-input" placeholder="Enter your full name"
+                                    required minlength="3">
+                            </div>
+
+                            <!-- Username -->
+                            <div class="form-group">
+                                <label class="form-label" for="username">Username</label>
+                                <input type="text" id="username" class="form-input" placeholder="Choose a username"
+                                    required minlength="4" pattern="[a-zA-Z0-9_]+"
+                                    title="Username can only contain letters, numbers, and underscores">
+                                <small style="color: var(--text-muted); font-size: 0.85rem;">
+                                    Only letters, numbers, and underscores allowed
+                                </small>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="form-group">
+                                <label class="form-label" for="password">Password</label>
+                                <input type="password" id="password" class="form-input" placeholder="Create a password"
+                                    required minlength="6">
+                                <small style="color: var(--text-muted); font-size: 0.85rem;">
+                                    Minimum 6 characters
+                                </small>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="form-group">
+                                <label class="form-label" for="confirmPassword">Confirm Password</label>
+                                <input type="password" id="confirmPassword" class="form-input"
+                                    placeholder="Re-enter your password" required minlength="6">
+                            </div>
+
+                            <!-- Student ID (only for students) -->
+                            <div class="form-group hidden" id="studentIdGroup">
+                                <label class="form-label" for="studentId">Student ID (Optional)</label>
+                                <input type="text" id="studentId" class="form-input"
+                                    placeholder="Enter your student ID">
+                            </div>
+
+                            <!-- Error/Success Messages -->
+                            <div id="signupError" class="alert alert-danger hidden"></div>
+                            <div id="signupSuccess" class="alert alert-success hidden"></div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                Create Account
+                            </button>
+                        </form>
+
+                        <!-- Login Link -->
+                        <div class="mt-md text-center">
+                            <p style="color: var(--text-secondary);">
+                                Already have an account?
+                                <a href="index.html"
+                                    style="color: var(--primary-light); text-decoration: none; font-weight: 600;">
+                                    Login here
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                <div class="card mt-lg fade-in" style="animation-delay: 0.2s;">
+                    <div style="text-align: center;">
+                        <h4 style="color: var(--text-primary); margin-bottom: 1rem;">
+                            Why Join Our Platform?
+                        </h4>
+                        <div class="grid grid-3 gap-md">
+                            <div>
+                                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                    Adaptive Learning
+                                </p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                    Track Progress
+                                </p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                                    Smart Hints
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="data.js"></script>
+    <script>
+        let selectedRole = null;
+
+        function selectRole(role) {
+            selectedRole = role;
+            document.getElementById('selectedRole').value = role;
+
+            // Update button styles
+            const studentBtn = document.getElementById('studentRoleBtn');
+            const teacherBtn = document.getElementById('teacherRoleBtn');
+
+            if (role === 'student') {
+                studentBtn.style.background = 'var(--gradient-primary)';
+                studentBtn.style.color = 'white';
+                studentBtn.style.borderColor = 'transparent';
+                teacherBtn.style.background = 'transparent';
+                teacherBtn.style.color = 'var(--primary)';
+                teacherBtn.style.borderColor = 'var(--primary)';
+
+                // Show student ID field
+                document.getElementById('studentIdGroup').classList.remove('hidden');
+            } else {
+                teacherBtn.style.background = 'var(--gradient-success)';
+                teacherBtn.style.color = 'white';
+                teacherBtn.style.borderColor = 'transparent';
+                studentBtn.style.background = 'transparent';
+                studentBtn.style.color = 'var(--primary)';
+                studentBtn.style.borderColor = 'var(--primary)';
+
+                // Hide student ID field
+                document.getElementById('studentIdGroup').classList.add('hidden');
+            }
+        }
+
+        function handleSignup(event) {
+            event.preventDefault();
+
+            const errorDiv = document.getElementById('signupError');
+            const successDiv = document.getElementById('signupSuccess');
+
+            // Clear previous messages
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
+
+            // Get form values
+            const fullName = document.getElementById('fullName').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const studentId = document.getElementById('studentId').value.trim();
+            const role = selectedRole;
+
+            // Validation
+            if (!role) {
+                showError('Please select whether you are a Student or Teacher');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters long');
+                return;
+            }
+
+            // Check if username already exists
+            const existingUsers = AUTH.users;
+            if (existingUsers[username]) {
+                showError('Username already exists. Please choose a different username.');
+                return;
+            }
+
+            // Create new user
+            const newUser = {
+                username: username,
+                password: password,
+                role: role,
+                name: fullName,
+                id: role === 'student'
+                    ? (studentId || `STU${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`)
+                    : `TEACH${String(Math.floor(Math.random() * 100)).padStart(3, '0')}`
+            };
+
+            // Save to AUTH.users
+            AUTH.users[username] = newUser;
+
+            // If student, initialize student data
+            if (role === 'student') {
+                DATA.initializeStudentData(username);
+
+                // Add to students array for teacher dashboard
+                const studentData = {
+                    id: newUser.id,
+                    name: fullName,
+                    username: username,
+                    currentLevel: 'easy',
+                    weakTopics: [],
+                    codeSuccessRate: 0,
+                    totalQuestions: 0,
+                    correctAnswers: 0,
+                    topicPerformance: {},
+                    improvementTrend: [0],
+                    lastActive: new Date().toISOString()
+                };
+
+                // Initialize topic performance
+                Object.keys(DATA.topics).forEach(topic => {
+                    studentData.topicPerformance[topic] = {
+                        attempted: 0,
+                        correct: 0,
+                        failureStreak: 0,
+                        mode: 'mcq'
+                    };
+                });
+
+                DATA.students.push(studentData);
+            }
+
+            // Save users to localStorage for persistence
+            localStorage.setItem('platformUsers', JSON.stringify(AUTH.users));
+            localStorage.setItem('platformStudents', JSON.stringify(DATA.students));
+
+            // Show success message
+            successDiv.textContent = `Account created successfully! Redirecting to login...`;
+            successDiv.classList.remove('hidden');
+
+            // Redirect to login after 2 seconds
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('signupError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+
+            // Shake animation
+            const form = document.getElementById('signupForm');
+            form.style.animation = 'none';
+            setTimeout(() => {
+                form.style.animation = 'shake 0.5s';
+            }, 10);
+        }
+
+        // Add shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+                20%, 40%, 60%, 80% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Load existing users from localStorage if available
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUsers = localStorage.getItem('platformUsers');
+            const savedStudents = localStorage.getItem('platformStudents');
+
+            if (savedUsers) {
+                const users = JSON.parse(savedUsers);
+                Object.assign(AUTH.users, users);
+            }
+
+            if (savedStudents) {
+                const students = JSON.parse(savedStudents);
+                DATA.students = students;
+            }
+        });
+    </script>
+</body>
+
+</html>
